@@ -16,6 +16,7 @@ export class DepthChart {
             : container;
 
         this.options = {
+            theme: 'dark',
             animationDuration: 250,
             bidColor: '#00c853',
             askColor: '#ff1744',
@@ -32,6 +33,7 @@ export class DepthChart {
         this.width = 0;
         this.height = 0;
 
+        this.setTheme(this.options.theme);
         this._init();
         this._setupResizeObserver();
     }
@@ -73,6 +75,19 @@ export class DepthChart {
     update(data) {
         this.data = data;
         this._render();
+    }
+
+    setTheme(theme) {
+        const isDark = theme !== 'light';
+
+        this.options.theme = isDark ? 'dark' : 'light';
+        this.options.gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.08)';
+        this.options.textColor = isDark ? '#8b8b8f' : '#4c5b72';
+        this.options.midLineColor = isDark ? '#ffd600' : '#d97706';
+
+        if (this.svg) {
+            this._render();
+        }
     }
 
     /**

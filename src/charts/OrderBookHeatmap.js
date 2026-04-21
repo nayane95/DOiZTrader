@@ -21,6 +21,7 @@ export class OrderBookHeatmap {
         }
 
         this.options = {
+            theme: 'dark',
             // Цвета
             bidColor: { r: 0, g: 200, b: 83 },
             askColor: { r: 255, g: 23, b: 68 },
@@ -301,6 +302,11 @@ export class OrderBookHeatmap {
         this._render();
     }
 
+    setTheme(theme) {
+        this.options.theme = theme === 'light' ? 'light' : 'dark';
+        this._render();
+    }
+
     /**
      * Рисуем метку объёма с контрастным фоном
      */
@@ -323,7 +329,9 @@ export class OrderBookHeatmap {
         const bgHeight = 14;
 
         // Тёмный фон для контраста
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        this.ctx.fillStyle = this.options.theme === 'light'
+            ? 'rgba(255, 255, 255, 0.78)'
+            : 'rgba(0, 0, 0, 0.75)';
         this.ctx.fillRect(x, y - bgHeight / 2, bgWidth, bgHeight);
 
         // Текст

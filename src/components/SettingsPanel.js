@@ -60,6 +60,18 @@ export class SettingsPanel {
       
       <div class="settings-panel__content">
         <div class="settings-section">
+          <h3 class="settings-section__title">Appearance</h3>
+
+          <div class="settings-row">
+            <label>Theme</label>
+            <select id="setting-theme">
+              <option value="dark" ${this.settings.theme === 'dark' ? 'selected' : ''}>Dark</option>
+              <option value="light" ${this.settings.theme === 'light' ? 'selected' : ''}>Light</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3 class="settings-section__title">Candle Colors</h3>
           
           <div class="settings-row">
@@ -250,6 +262,7 @@ export class SettingsPanel {
    */
   _save() {
     this.settings = {
+      theme: this.panel.querySelector('#setting-theme').value,
       candleUpColor: this.panel.querySelector('#setting-candle-up').value,
       candleDownColor: this.panel.querySelector('#setting-candle-down').value,
       heatmapBidColor: this.panel.querySelector('#setting-heatmap-bid').value,
@@ -283,6 +296,7 @@ export class SettingsPanel {
   _reset() {
     this.settings = { ...this.defaults };
 
+    this.panel.querySelector('#setting-theme').value = this.defaults.theme;
     this.panel.querySelector('#setting-candle-up').value = this.defaults.candleUpColor;
     this.panel.querySelector('#setting-candle-down').value = this.defaults.candleDownColor;
     this.panel.querySelector('#setting-heatmap-bid').value = this.defaults.heatmapBidColor;
@@ -342,6 +356,19 @@ export class SettingsPanel {
   }
 
   /**
+   * Синхронизируем тему без пересоздания панели
+   * @param {string} theme
+   */
+  setTheme(theme) {
+    this.settings.theme = theme === 'light' ? 'light' : 'dark';
+
+    const input = this.panel?.querySelector('#setting-theme');
+    if (input) {
+      input.value = this.settings.theme;
+    }
+  }
+
+  /**
    * Инжектим стили
    * @private
    */
@@ -354,8 +381,7 @@ export class SettingsPanel {
       .settings-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
+        background: rgba(10, 14, 20, 0.56);
         z-index: 500;
         opacity: 0;
         visibility: hidden;
@@ -377,8 +403,8 @@ export class SettingsPanel {
         max-height: 90vh;
         background: var(--bg-secondary, #12121a);
         border: 1px solid var(--border-color, rgba(255,255,255,0.08));
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        border-radius: 14px;
+        box-shadow: var(--shadow-lg, 0 10px 24px rgba(0, 0, 0, 0.24));
         z-index: 510;
         opacity: 0;
         visibility: hidden;
@@ -399,6 +425,7 @@ export class SettingsPanel {
         justify-content: space-between;
         padding: 16px 20px;
         border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08));
+        background: var(--bg-tertiary, #1a1a24);
       }
       
       .settings-panel__header h2 {
@@ -431,6 +458,11 @@ export class SettingsPanel {
       
       .settings-section {
         margin-bottom: 24px;
+        padding: 14px;
+        background: var(--bg-tertiary, #1a1a24);
+        border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.18));
       }
       
       .settings-section__title {
@@ -472,6 +504,7 @@ export class SettingsPanel {
         padding: 8px 12px;
         font-size: 13px;
         cursor: pointer;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.18));
       }
       
       .settings-slider {
@@ -515,17 +548,19 @@ export class SettingsPanel {
         align-items: center;
         gap: 8px;
         padding: 10px 12px;
-        background: var(--bg-tertiary, #1a1a24);
+        background: var(--bg-secondary, #12121a);
         border: 1px solid var(--border-color, rgba(255,255,255,0.08));
         border-radius: 8px;
         color: var(--text-primary, #e8e8ea);
         font-size: 12px;
         cursor: pointer;
         transition: all 0.15s ease;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.18));
       }
       
       .settings-preset:hover {
         border-color: var(--accent-blue, #2979ff);
+        box-shadow: var(--shadow-md, 0 4px 10px rgba(0,0,0,0.24));
       }
       
       .settings-preset__colors {
@@ -545,6 +580,7 @@ export class SettingsPanel {
         gap: 8px;
         padding: 16px 20px;
         border-top: 1px solid var(--border-color, rgba(255,255,255,0.08));
+        background: var(--bg-tertiary, #1a1a24);
       }
     `;
     document.head.appendChild(style);

@@ -12,6 +12,7 @@ export class CVDChart {
             : container;
 
         this.options = {
+            theme: 'dark',
             height: 120,
             lineWidth: 2,
             buyColor: '#00c853',
@@ -139,6 +140,7 @@ export class CVDChart {
 
         // Инжектим стили
         this._injectStyles();
+        this.setTheme(this.options.theme);
     }
 
     /**
@@ -347,6 +349,16 @@ export class CVDChart {
         this.sellArea.attr('d', null);
     }
 
+    setTheme(theme) {
+        const isDark = theme !== 'light';
+
+        this.options.theme = isDark ? 'dark' : 'light';
+
+        if (this.zeroLine) {
+            this.zeroLine.attr('stroke', isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.16)');
+        }
+    }
+
     /**
      * Инжектим стили
      * @private
@@ -361,7 +373,9 @@ export class CVDChart {
         position: relative;
         width: 100%;
         background: var(--bg-tertiary, #1a1a24);
+        border: 1px solid var(--border-color, rgba(255,255,255,0.08));
         border-radius: 8px;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.18));
         overflow: hidden;
       }
       

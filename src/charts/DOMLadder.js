@@ -199,6 +199,7 @@ export class DOMLadder {
         font-size: 11px;
         color: var(--text-primary, #e8e8ea);
         background: var(--bg-secondary, #12121a);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
       }
       
       .dom-ladder__header {
@@ -246,6 +247,7 @@ export class DOMLadder {
         background: var(--bg-tertiary, #1a1a24);
         border-top: 1px solid var(--border-color);
         border-bottom: 1px solid var(--border-color);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
       }
       
       .dom-ladder__spread-value {

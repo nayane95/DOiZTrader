@@ -30,6 +30,7 @@ const state = {
   exchange: 'binance',
   symbol: 'BTCUSDT',
   timeframe: '1h',
+  theme: 'dark',
   orderBookMode: 'ladder',
   orderBookDepth: 20,
   currentPrice: 0,
@@ -80,6 +81,7 @@ async function init() {
   // Загружаем сохранённые настройки
   const settings = storage.getSettings();
   Object.assign(state, settings);
+  applyTheme(state.theme, { persist: false, syncPanel: false });
 
   // Регистрируем адаптеры бирж
   wsManager.registerAdapter('binance', BinanceAdapter);
@@ -106,14 +108,14 @@ async function init() {
 function initUI() {
   // Создаём свечной график
   const chartArea = document.getElementById('chart-area');
-  chart = new CandlestickChart(chartArea, { theme: 'dark', showVolume: false });
+  chart = new CandlestickChart(chartArea, { theme: state.theme, showVolume: false });
 
   // Создаём Order Book view (по умолчанию ladder)
   const orderBookContent = document.getElementById('orderbook-content');
   orderBookView = new DOMLadder(orderBookContent, { depth: state.orderBookDepth });
 
   // Создаём heatmap (поверх графика) и синхронизируем с chart
-  heatmap = new OrderBookHeatmap(chartArea, { opacity: 0.6 });
+  heatmap = new OrderBookHeatmap(chartArea, { opacity: 0.6, theme: state.theme });
   heatmap.attachToChart(chart);  // Синхронизация координат!
   heatmap.setVisible(false);
 
@@ -126,13 +128,15 @@ function initUI() {
   // Создаём CVD график
   const cvdContainer = document.getElementById('cvd-chart');
   if (cvdContainer) {
-    cvdChart = new CVDChart(cvdContainer, { height: 100 });
+    cvdChart = new CVDChart(cvdContainer, { height: 100, theme: state.theme });
   }
 
   // Создаём панель настроек
   settingsPanel = new SettingsPanel({
     onSettingsChange: applySettings
   });
+
+  applySettings(settingsPanel.getSettings());
 
   // Обновляем UI с текущим состоянием
   updateUIState();
@@ -146,6 +150,10 @@ function initUI() {
  */
 function applySettings(settings) {
   console.log('Applying settings:', settings);
+
+  if (settings.theme) {
+    applyTheme(settings.theme, { persist: false });
+  }
 
   // Применяем к графику
   if (chart?.setCandlePalette) {
@@ -318,6 +326,12 @@ function initEventHandlers() {
     if (settingsPanel) {
       settingsPanel.toggle();
     }
+  });
+
+  // Переключение темы
+  document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
+    const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
   });
 
   // Heatmap toggle
@@ -654,13 +668,15 @@ function switchOrderBookMode(mode) {
       orderBookView = new DOMLadder(container, { depth: state.orderBookDepth });
       break;
     case 'depth':
-      orderBookView = new DepthChart(container);
+      orderBookView = new DepthChart(container, { theme: state.theme });
       break;
     case 'heatmap':
       // Для heatmap показываем mini версию в sidebar
       orderBookView = new DOMLadder(container, { depth: 10, showTotal: false });
       break;
   }
+
+  orderBookView?.setTheme?.(state.theme);
 
   // Основной overlay heatmap управляется только toolbar-кнопкой.
   if (heatmap) {
@@ -743,10 +759,63 @@ function updateUIState() {
     btn.classList.toggle('active', btn.dataset.tf === state.timeframe);
   });
 
+  const timeframeSelect = document.getElementById('timeframe-select');
+  if (timeframeSelect) {
+    timeframeSelect.value = state.timeframe;
+  }
+
+  const headerTimeframeSelect = document.getElementById('header-timeframe-select');
+  if (headerTimeframeSelect) {
+    headerTimeframeSelect.value = state.timeframe;
+  }
+
   // Активный режим Order Book
   document.querySelectorAll('.orderbook__modes .btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === state.orderBookMode);
   });
+
+  const themeToggleBtn = document.getElementById('theme-toggle-btn');
+  const themeToggleIcon = document.getElementById('theme-toggle-icon');
+  const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
+  const nextThemeLabel = nextTheme === 'light' ? 'light' : 'dark';
+
+  if (themeToggleBtn) {
+    themeToggleBtn.title = `Switch to ${nextThemeLabel} mode`;
+    themeToggleBtn.setAttribute('aria-label', `Switch to ${nextThemeLabel} mode`);
+  }
+
+  if (themeToggleIcon) {
+    themeToggleIcon.textContent = nextTheme === 'light' ? '☀️' : '🌙';
+  }
+}
+
+function applyTheme(theme, options = {}) {
+  const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+  const { persist = true, syncPanel = true } = options;
+
+  state.theme = normalizedTheme;
+  document.documentElement.dataset.theme = normalizedTheme;
+  document.documentElement.style.colorScheme = normalizedTheme;
+
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) {
+    themeMeta.setAttribute('content', normalizedTheme === 'dark' ? '#0a0a0f' : '#f4f7fb');
+  }
+
+  if (persist) {
+    storage.updateSetting('theme', normalizedTheme);
+  }
+
+  chart?.setTheme?.(normalizedTheme);
+  cvdChart?.setTheme?.(normalizedTheme);
+  orderBookView?.setTheme?.(normalizedTheme);
+  heatmap?.setTheme?.(normalizedTheme);
+
+  if (syncPanel && settingsPanel) {
+    settingsPanel.setTheme(normalizedTheme);
+  }
+
+  updateUIState();
 }
 
 // ============================================
@@ -864,8 +933,7 @@ function injectInfoPanelStyles() {
     .info-panel__overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
+      background: rgba(10, 14, 20, 0.56);
     }
     .info-panel__content {
       position: absolute;
@@ -874,7 +942,9 @@ function injectInfoPanelStyles() {
       right: 0;
       max-height: 70vh;
       background: var(--bg-secondary, #12121a);
-      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border-color, rgba(255,255,255,0.08));
+      border-radius: 18px 18px 0 0;
+      box-shadow: var(--shadow-lg, 0 10px 24px rgba(0,0,0,0.24));
       overflow: hidden;
       transform: translateY(100%);
       transition: transform 0.3s ease;
@@ -888,6 +958,7 @@ function injectInfoPanelStyles() {
       justify-content: space-between;
       padding: 16px 20px;
       border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08));
+      background: var(--bg-tertiary, #1a1a24);
     }
     .info-panel__header h2 {
       margin: 0;
@@ -907,9 +978,11 @@ function injectInfoPanelStyles() {
     }
     .info-item {
       margin-bottom: 16px;
-      padding: 12px;
+      padding: 14px;
       background: var(--bg-tertiary, #1a1a24);
-      border-radius: 8px;
+      border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.18));
     }
     .info-item h3 {
       margin: 0 0 8px 0;

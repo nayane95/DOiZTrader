@@ -42,19 +42,75 @@ export class CandlestickChart {
             footprintStripRows: 4,
             ...options
         };
+        this.candlePalette = {
+            upColor: null,
+            downColor: null
+        };
 
         this._initChart();
         this._setupResizeObserver();
     }
 
-    _getSeriesPalette(upColor = '#00e676', downColor = '#ff5252') {
+    _getSeriesPalette(upColor = null, downColor = null, theme = this.options.theme) {
+        const themeColors = this._getThemeColors(theme);
+        const isDark = theme !== 'light';
+        const resolvedUp = upColor || themeColors.candleUp;
+        const resolvedDown = downColor || themeColors.candleDown;
+
         return {
-            upColor: this._withAlpha(upColor, 0.03),
-            downColor: this._withAlpha(downColor, 0.03),
-            borderUpColor: this._withAlpha(upColor, 0.16),
-            borderDownColor: this._withAlpha(downColor, 0.16),
-            wickUpColor: this._withAlpha(upColor, 0.12),
-            wickDownColor: this._withAlpha(downColor, 0.12)
+            upColor: this._withAlpha(resolvedUp, isDark ? 0.22 : 0.32),
+            downColor: this._withAlpha(resolvedDown, isDark ? 0.22 : 0.32),
+            borderUpColor: this._withAlpha(resolvedUp, isDark ? 0.92 : 0.96),
+            borderDownColor: this._withAlpha(resolvedDown, isDark ? 0.92 : 0.96),
+            wickUpColor: this._withAlpha(resolvedUp, isDark ? 0.72 : 0.68),
+            wickDownColor: this._withAlpha(resolvedDown, isDark ? 0.72 : 0.68)
+        };
+    }
+
+    _getThemeColors(theme = this.options.theme) {
+        const isDark = theme !== 'light';
+
+        return {
+            background: isDark ? '#0a0a0f' : '#ffffff',
+            textColor: isDark ? '#8b8b8f' : '#3f4654',
+            gridColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(31, 41, 55, 0.08)',
+            crosshairColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(31, 41, 55, 0.32)',
+            crosshairLabelBackground: isDark ? '#1a1a24' : '#ffffff',
+            axisBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(31, 41, 55, 0.12)',
+            footprintWick: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255, 77, 90, 0.92)',
+            footprintDivider: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(31, 41, 55, 0.18)',
+            footprintRowLine: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(31, 41, 55, 0.05)',
+            footprintOuterBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(31, 41, 55, 0.09)',
+            footprintBuyText: isDark ? '#e3fff0' : '#173438',
+            footprintSellText: isDark ? '#ffe2e8' : '#4b2327',
+            footprintNeutralText: isDark ? '#f3f5f7' : '#1f2937',
+            footprintCompactBuyText: isDark ? '#d8ffea' : '#173438',
+            footprintCompactSellText: isDark ? '#ffd7df' : '#4b2327',
+            deltaLabelBackground: isDark ? 'rgba(8, 10, 16, 0.86)' : 'rgba(255, 255, 255, 0.88)',
+            deltaLabelNeutral: isDark ? '#8b8b8f' : '#71819b',
+            stripBackground: isDark ? 'rgba(9, 11, 16, 0.94)' : 'rgba(255, 255, 255, 0.92)',
+            stripBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.12)',
+            stripRowLine: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.08)',
+            legendBackground: isDark ? 'rgba(11, 14, 22, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+            legendBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.12)',
+            legendTitle: isDark ? '#f3f5f7' : '#162033',
+            legendSubtitle: isDark ? '#8b8b8f' : '#71819b',
+            legendPrice: isDark ? '#d8ffea' : '#0f6a44',
+            candleUp: isDark ? '#00e676' : '#14b8a6',
+            candleDown: isDark ? '#ff5252' : '#ff4d5a',
+            summaryCardBackground: isDark ? 'rgba(17, 24, 39, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+            summaryCardBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(31, 41, 55, 0.08)',
+            summaryCardShadow: isDark ? 'rgba(0, 0, 0, 0.32)' : 'rgba(15, 23, 42, 0.12)',
+            summaryCardText: isDark ? '#f3f5f7' : '#1f2937',
+            summaryCardLabel: isDark ? '#a7b0bc' : '#5f6b7b',
+            highVolumeRow: isDark ? '#0b1017' : '#111111',
+            highVolumeText: '#ffffff',
+            bidHeatLow: isDark ? '#1f7f74' : '#c6ece7',
+            bidHeatHigh: isDark ? '#00b8a0' : '#006d65',
+            askHeatLow: isDark ? '#9f4858' : '#ffd3d8',
+            askHeatHigh: isDark ? '#ff526d' : '#cf3048',
+            sideTotalBid: isDark ? '#22c7b8' : '#16a394',
+            sideTotalAsk: isDark ? '#ff6b83' : '#e64a64'
         };
     }
 
@@ -63,43 +119,43 @@ export class CandlestickChart {
      * @private
      */
     _initChart() {
-        const isDark = this.options.theme === 'dark';
+        const themeColors = this._getThemeColors();
 
         this.chart = createChart(this.container, {
             layout: {
-                background: { type: ColorType.Solid, color: isDark ? '#0a0a0f' : '#ffffff' },
-                textColor: isDark ? '#8b8b8f' : '#333333',
+                background: { type: ColorType.Solid, color: themeColors.background },
+                textColor: themeColors.textColor,
                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontSize: 12
             },
             grid: {
-                vertLines: { color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
-                horzLines: { color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }
+                vertLines: { color: themeColors.gridColor },
+                horzLines: { color: themeColors.gridColor }
             },
             crosshair: {
                 mode: CrosshairMode.Normal,
                 vertLine: {
-                    color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                    color: themeColors.crosshairColor,
                     width: 1,
                     style: 2,
-                    labelBackgroundColor: isDark ? '#1a1a24' : '#f0f0f0'
+                    labelBackgroundColor: themeColors.crosshairLabelBackground
                 },
                 horzLine: {
-                    color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                    color: themeColors.crosshairColor,
                     width: 1,
                     style: 2,
-                    labelBackgroundColor: isDark ? '#1a1a24' : '#f0f0f0'
+                    labelBackgroundColor: themeColors.crosshairLabelBackground
                 }
             },
             rightPriceScale: {
-                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                borderColor: themeColors.axisBorder,
                 scaleMargins: {
                     top: 0.06,
                     bottom: 0.2
                 }
             },
             timeScale: {
-                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                borderColor: themeColors.axisBorder,
                 timeVisible: true,
                 secondsVisible: false,
                 tickMarkFormatter: (time) => {
@@ -125,7 +181,10 @@ export class CandlestickChart {
         });
 
         // Создаём серию свечей (v5 API: addSeries с типом)
-        this.candleSeries = this.chart.addSeries(CandlestickSeries, this._getSeriesPalette());
+        this.candleSeries = this.chart.addSeries(
+            CandlestickSeries,
+            this._getSeriesPalette(this.candlePalette.upColor, this.candlePalette.downColor, this.options.theme)
+        );
 
         // Создаём серию объёма (v5 API)
         if (this.options.showVolume) {
@@ -434,8 +493,9 @@ export class CandlestickChart {
 
     setCandlePalette(upColor, downColor) {
         if (!this.candleSeries) return;
+        this.candlePalette = { upColor, downColor };
 
-        this.candleSeries.applyOptions(this._getSeriesPalette(upColor, downColor));
+        this.candleSeries.applyOptions(this._getSeriesPalette(upColor, downColor, this.options.theme));
 
         this._scheduleFootprintRender();
     }
@@ -463,18 +523,42 @@ export class CandlestickChart {
      * @param {string} theme - 'dark' | 'light'
      */
     setTheme(theme) {
-        const isDark = theme === 'dark';
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        const themeColors = this._getThemeColors(normalizedTheme);
+        this.options.theme = normalizedTheme;
 
         this.chart.applyOptions({
             layout: {
-                background: { type: ColorType.Solid, color: isDark ? '#0a0a0f' : '#ffffff' },
-                textColor: isDark ? '#8b8b8f' : '#333333'
+                background: { type: ColorType.Solid, color: themeColors.background },
+                textColor: themeColors.textColor
             },
             grid: {
-                vertLines: { color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
-                horzLines: { color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }
+                vertLines: { color: themeColors.gridColor },
+                horzLines: { color: themeColors.gridColor }
+            },
+            crosshair: {
+                vertLine: {
+                    color: themeColors.crosshairColor,
+                    labelBackgroundColor: themeColors.crosshairLabelBackground
+                },
+                horzLine: {
+                    color: themeColors.crosshairColor,
+                    labelBackgroundColor: themeColors.crosshairLabelBackground
+                }
+            },
+            rightPriceScale: {
+                borderColor: themeColors.axisBorder
+            },
+            timeScale: {
+                borderColor: themeColors.axisBorder
             }
         });
+
+        if (this.candleSeries) {
+            this.candleSeries.applyOptions(
+                this._getSeriesPalette(this.candlePalette.upColor, this.candlePalette.downColor, normalizedTheme)
+            );
+        }
 
         this._scheduleFootprintRender();
     }
@@ -561,21 +645,30 @@ export class CandlestickChart {
             return;
         }
 
+        const summaryStride = this._getOverlayStride(visibleBars, 132);
+        const deltaStride = this._getOverlayStride(visibleBars, 56);
+
         visibleBars.forEach((item, index) => {
             const barWidth = this._getBarWidth(visibleBars, index);
-            this._drawFootprintBar(item.candle, item.footprint, item.x, barWidth);
+            const detailLevel = this._getFootprintDetailLevel(barWidth);
 
-            if (barWidth >= 10) {
-                this._drawDeltaLabel(item.footprint, item.x, barWidth);
+            if (detailLevel === 'hidden') {
+                return;
+            }
+
+            this._drawFootprintBar(item.candle, item.footprint, item.x, barWidth, detailLevel);
+
+            if (detailLevel === 'full' && index % summaryStride === 0) {
+                this._drawFootprintSummaryCard(item.candle, item.footprint, item.x, barWidth);
+            } else if ((detailLevel === 'medium' || detailLevel === 'compact') && index % deltaStride === 0) {
+                this._drawDeltaLabel(item.candle, item.footprint, item.x, barWidth);
             }
         });
-
-        this._drawBottomVolumetricStrip(visibleBars);
-        this._drawChartLegend(visibleBars[visibleBars.length - 1]?.footprint);
     }
 
-    _drawFootprintBar(candle, footprint, x, barWidth) {
-        if (!footprint || barWidth < 14) return;
+    _drawFootprintBar(candle, footprint, x, barWidth, detailLevel = this._getFootprintDetailLevel(barWidth)) {
+        if (!footprint || barWidth < 12) return;
+        const themeColors = this._getThemeColors();
 
         const highY = this.candleSeries.priceToCoordinate(candle.high);
         const lowY = this.candleSeries.priceToCoordinate(candle.low);
@@ -587,19 +680,25 @@ export class CandlestickChart {
         const shellTop = Math.min(highY, lowY);
         const shellBottom = Math.max(highY, lowY);
         const shellHeight = Math.max(shellBottom - shellTop, 14);
-        const rows = this._buildFootprintRows(candle, footprint, shellTop, shellBottom);
+        const targetRows = this._getResponsiveRowCount(shellHeight, detailLevel);
+        const rows = this._buildFootprintRows(candle, footprint, shellTop, shellBottom, targetRows);
 
         if (!rows.length) return;
 
         const layout = this._getCompositeLayout(x, barWidth);
         const maxRowVolume = Math.max(...rows.map(row => row.totalVolume), 1);
-        const borderColor = candle.close >= candle.open ? 'rgba(0, 230, 118, 0.72)' : 'rgba(255, 82, 82, 0.72)';
+        const maxCellVolume = Math.max(
+            ...rows.flatMap(row => [row.sellVolume, row.buyVolume]),
+            1
+        );
+        const borderColor = candle.close >= candle.open ? themeColors.candleUp : themeColors.candleDown;
         const bodyTop = Math.min(openY, closeY);
         const bodyBottom = Math.max(openY, closeY);
-        const candleCenterX = layout.candleLeft + (layout.candleWidth / 2);
-        const pocRow = rows.reduce((maxRow, row) => row.totalVolume > maxRow.totalVolume ? row : maxRow, rows[0]);
+        const candleCenterX = layout.candleCenterX;
+        const buyTotal = rows.reduce((sum, row) => sum + row.buyVolume, 0);
+        const sellTotal = rows.reduce((sum, row) => sum + row.sellVolume, 0);
 
-        this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.22)';
+        this.footprintCtx.strokeStyle = themeColors.footprintWick;
         this.footprintCtx.lineWidth = 1;
         this.footprintCtx.beginPath();
         this.footprintCtx.moveTo(candleCenterX, highY);
@@ -607,8 +706,8 @@ export class CandlestickChart {
         this.footprintCtx.stroke();
 
         this.footprintCtx.fillStyle = candle.close >= candle.open
-            ? 'rgba(0, 200, 83, 0.26)'
-            : 'rgba(255, 23, 68, 0.26)';
+            ? this._withAlpha(themeColors.candleUp, this.options.theme === 'light' ? 0.98 : 0.26)
+            : this._withAlpha(themeColors.candleDown, this.options.theme === 'light' ? 0.98 : 0.26);
         this.footprintCtx.fillRect(
             layout.candleLeft,
             bodyTop,
@@ -625,146 +724,321 @@ export class CandlestickChart {
             Math.max(bodyBottom - bodyTop - 1, 1)
         );
 
-        const dividerX = layout.footprintLeft + layout.footprintWidth * 0.5;
-        this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.14)';
-        this.footprintCtx.lineWidth = 1;
-        this.footprintCtx.beginPath();
-        this.footprintCtx.moveTo(dividerX + 0.5, shellTop);
-        this.footprintCtx.lineTo(dividerX + 0.5, shellBottom);
-        this.footprintCtx.stroke();
+        const showCellText = detailLevel === 'full' || (detailLevel === 'medium' && layout.sideWidth >= 20);
+        const showCellBorders = detailLevel === 'full' || detailLevel === 'medium';
+        const showRowGuides = detailLevel !== 'minimal';
+        const cellInset = detailLevel === 'full'
+            ? Math.max(1, Math.min(4, layout.sideWidth * 0.08))
+            : detailLevel === 'medium'
+                ? Math.max(1, Math.min(3, layout.sideWidth * 0.05))
+                : 0;
+        const cellWidth = Math.max(3, layout.sideWidth - cellInset * 2);
+        const fontSize = detailLevel === 'full'
+            ? (layout.sideWidth >= 34 ? 8 : 7)
+            : layout.sideWidth >= 24 ? 7 : 6;
 
         rows.forEach((row, index) => {
             const rowTop = index === 0 ? shellTop : rows[index - 1].boundaryBottom;
             const rowBottom = row.boundaryBottom;
-            const rowHeight = Math.max(rowBottom - rowTop, 1);
-            const sellIntensity = row.sellVolume > 0 ? 0.12 + (row.sellVolume / maxRowVolume) * 0.58 : 0;
-            const buyIntensity = row.buyVolume > 0 ? 0.12 + (row.buyVolume / maxRowVolume) * 0.58 : 0;
-            const dominantDelta = row.buyVolume - row.sellVolume;
+            const rowHeight = Math.max(rowBottom - rowTop - 1, 1);
+            const totalIntensity = row.totalVolume / maxRowVolume;
+            const sellIntensity = row.sellVolume / maxCellVolume;
+            const buyIntensity = row.buyVolume / maxCellVolume;
+            const sellHighlighted = row.sellVolume > 0 && sellIntensity >= 0.82;
+            const buyHighlighted = row.buyVolume > 0 && buyIntensity >= 0.82;
+            const sellFill = sellHighlighted
+                ? themeColors.highVolumeRow
+                : this._blendColors(
+                    themeColors.askHeatLow,
+                    themeColors.askHeatHigh,
+                    Math.max(0.08, Math.min(1, sellIntensity))
+                );
+            const buyFill = buyHighlighted
+                ? themeColors.highVolumeRow
+                : this._blendColors(
+                    themeColors.bidHeatLow,
+                    themeColors.bidHeatHigh,
+                    Math.max(0.08, Math.min(1, buyIntensity))
+                );
+            const sellText = sellHighlighted ? themeColors.highVolumeText : (sellIntensity >= 0.58 ? '#ffffff' : themeColors.footprintSellText);
+            const buyText = buyHighlighted ? themeColors.highVolumeText : (buyIntensity >= 0.58 ? '#ffffff' : themeColors.footprintBuyText);
 
-            this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.05)';
-            this.footprintCtx.lineWidth = 1;
-            this.footprintCtx.beginPath();
-            this.footprintCtx.moveTo(layout.footprintLeft, rowTop);
-            this.footprintCtx.lineTo(layout.footprintRight, rowTop);
-            this.footprintCtx.stroke();
+            if (showRowGuides) {
+                this.footprintCtx.strokeStyle = themeColors.footprintRowLine;
+                this.footprintCtx.lineWidth = 1;
+                this.footprintCtx.beginPath();
+                this.footprintCtx.moveTo(layout.leftColumnLeft, rowTop + 0.5);
+                this.footprintCtx.lineTo(layout.rightColumnRight, rowTop + 0.5);
+                this.footprintCtx.stroke();
+            }
 
             if (row.sellVolume > 0) {
-                this.footprintCtx.fillStyle = `rgba(255, 23, 68, ${sellIntensity})`;
-                this.footprintCtx.fillRect(layout.footprintLeft, rowTop, layout.footprintWidth / 2, rowHeight);
+                this.footprintCtx.fillStyle = sellFill;
+                this.footprintCtx.fillRect(layout.leftColumnLeft + cellInset, rowTop, cellWidth, rowHeight);
             }
 
             if (row.buyVolume > 0) {
-                this.footprintCtx.fillStyle = `rgba(0, 200, 83, ${buyIntensity})`;
-                this.footprintCtx.fillRect(dividerX, rowTop, layout.footprintWidth / 2, rowHeight);
+                this.footprintCtx.fillStyle = buyFill;
+                this.footprintCtx.fillRect(layout.rightColumnLeft + cellInset, rowTop, cellWidth, rowHeight);
             }
 
-            if (Math.abs(dominantDelta) > maxRowVolume * 0.32) {
-                this.footprintCtx.strokeStyle = dominantDelta >= 0
-                    ? 'rgba(0, 230, 118, 0.35)'
-                    : 'rgba(255, 82, 82, 0.35)';
+            if (showCellBorders && (row.sellVolume > 0 || row.buyVolume > 0)) {
+                this.footprintCtx.strokeStyle = this.options.theme === 'light'
+                    ? 'rgba(255, 255, 255, 0.78)'
+                    : 'rgba(255,255,255,0.12)';
                 this.footprintCtx.lineWidth = 1;
-                this.footprintCtx.strokeRect(
-                    layout.footprintLeft + 0.5,
-                    rowTop + 0.5,
-                    Math.max(layout.footprintWidth - 1, 1),
-                    Math.max(rowHeight - 1, 1)
-                );
+                this.footprintCtx.strokeRect(layout.leftColumnLeft + cellInset + 0.5, rowTop + 0.5, Math.max(cellWidth - 1, 1), Math.max(rowHeight - 1, 1));
+                this.footprintCtx.strokeRect(layout.rightColumnLeft + cellInset + 0.5, rowTop + 0.5, Math.max(cellWidth - 1, 1), Math.max(rowHeight - 1, 1));
+            }
+
+            if (showCellText) {
+                this.footprintCtx.font = `600 ${fontSize}px Inter, sans-serif`;
+                this.footprintCtx.textBaseline = 'middle';
+                this.footprintCtx.textAlign = 'center';
+
+                if (row.sellVolume > 0) {
+                    this.footprintCtx.fillStyle = sellText;
+                    this.footprintCtx.fillText(
+                        this._formatFootprintValue(row.sellVolume),
+                        layout.leftColumnLeft + cellInset + cellWidth / 2,
+                        rowTop + rowHeight / 2
+                    );
+                }
+
+                if (row.buyVolume > 0) {
+                    this.footprintCtx.fillStyle = buyText;
+                    this.footprintCtx.fillText(
+                        this._formatFootprintValue(row.buyVolume),
+                        layout.rightColumnLeft + cellInset + cellWidth / 2,
+                        rowTop + rowHeight / 2
+                    );
+                }
             }
         });
 
-        if (pocRow && pocRow.totalVolume > 0) {
-            const pocTop = pocRow.boundaryBottom - pocRow.height;
-            this.footprintCtx.strokeStyle = 'rgba(255, 214, 0, 0.8)';
-            this.footprintCtx.lineWidth = 1;
-            this.footprintCtx.strokeRect(
-                layout.footprintLeft + 0.5,
-                pocTop + 0.5,
-                Math.max(layout.footprintWidth - 1, 1),
-                Math.max(pocRow.height - 1, 1)
-            );
-        }
-
-        this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.18)';
+        this.footprintCtx.strokeStyle = themeColors.footprintOuterBorder;
         this.footprintCtx.lineWidth = 1;
         this.footprintCtx.beginPath();
-        this.footprintCtx.moveTo(layout.footprintLeft + 0.5, shellTop);
-        this.footprintCtx.lineTo(layout.footprintLeft + 0.5, shellBottom);
+        this.footprintCtx.moveTo(layout.leftColumnLeft + 0.5, shellTop);
+        this.footprintCtx.lineTo(layout.leftColumnLeft + 0.5, shellBottom);
         this.footprintCtx.stroke();
 
         this.footprintCtx.beginPath();
-        this.footprintCtx.moveTo(layout.footprintRight - 0.5, shellTop);
-        this.footprintCtx.lineTo(layout.footprintRight - 0.5, shellBottom);
+        this.footprintCtx.moveTo(layout.leftColumnRight - 0.5, shellTop);
+        this.footprintCtx.lineTo(layout.leftColumnRight - 0.5, shellBottom);
         this.footprintCtx.stroke();
 
-        const fontSize = layout.footprintWidth >= 52 ? 9 : layout.footprintWidth >= 34 ? 8 : 7;
-        this.footprintCtx.font = `600 ${fontSize}px Inter, sans-serif`;
-        this.footprintCtx.textBaseline = 'middle';
+        this.footprintCtx.beginPath();
+        this.footprintCtx.moveTo(layout.rightColumnRight - 0.5, shellTop);
+        this.footprintCtx.lineTo(layout.rightColumnRight - 0.5, shellBottom);
+        this.footprintCtx.stroke();
 
-        rows.forEach(row => {
-            if (layout.footprintWidth >= 30) {
-                const bidAskLabel = `${this._formatFootprintValue(row.sellVolume)} x ${this._formatFootprintValue(row.buyVolume)}`;
-                this.footprintCtx.fillStyle = row.buyVolume > row.sellVolume
-                    ? '#e3fff0'
-                    : row.sellVolume > row.buyVolume
-                        ? '#ffe2e8'
-                        : '#f3f5f7';
-                this.footprintCtx.textAlign = 'center';
-                this.footprintCtx.fillText(bidAskLabel, layout.footprintCenterX, row.y);
-            } else if (row.totalVolume > 0) {
-                this.footprintCtx.fillStyle = row.buyVolume >= row.sellVolume ? '#d8ffea' : '#ffd7df';
-                this.footprintCtx.textAlign = 'center';
-                this.footprintCtx.fillText(
-                    this._formatFootprintValue(row.totalVolume),
-                    layout.footprintCenterX,
-                    row.y
-                );
-            }
-        });
+        if (detailLevel === 'full') {
+            const totalsY = Math.min(this.height - 6, shellBottom + 18);
+            this.footprintCtx.font = '600 9px Inter, sans-serif';
+            this.footprintCtx.textAlign = 'center';
+            this.footprintCtx.textBaseline = 'middle';
+            this.footprintCtx.fillStyle = themeColors.sideTotalAsk;
+            this.footprintCtx.fillText(
+                this._formatFootprintValue(sellTotal),
+                layout.leftColumnLeft + layout.sideWidth / 2,
+                totalsY
+            );
+            this.footprintCtx.fillStyle = themeColors.sideTotalBid;
+            this.footprintCtx.fillText(
+                this._formatFootprintValue(buyTotal),
+                layout.rightColumnLeft + layout.sideWidth / 2,
+                totalsY
+            );
+        }
     }
 
     _getCompositeLayout(x, barWidth) {
-        const totalWidth = Math.min(Math.max(barWidth * 0.98, 18), 86);
-        const gap = totalWidth >= 28 ? 3 : 2;
-        const candleWidth = Math.min(Math.max(totalWidth * 0.24, 4), 14);
-        const footprintWidth = Math.max(totalWidth - candleWidth - gap, 10);
+        const totalWidth = Math.min(Math.max(barWidth * 1.08, 28), 92);
+        const gap = totalWidth >= 64 ? 4 : 3;
+        const candleWidth = Math.min(Math.max(barWidth * 0.2, 4), 10);
+        const sideWidth = Math.max(10, Math.floor((totalWidth - candleWidth - gap * 2) / 2));
         const left = x - totalWidth / 2;
-        const footprintLeft = left + candleWidth + gap;
+        const leftColumnLeft = left;
+        const candleLeft = leftColumnLeft + sideWidth + gap;
+        const rightColumnLeft = candleLeft + candleWidth + gap;
 
         return {
             totalWidth,
-            candleLeft: left,
+            leftColumnLeft,
+            leftColumnRight: leftColumnLeft + sideWidth,
+            rightColumnLeft,
+            rightColumnRight: rightColumnLeft + sideWidth,
+            sideWidth,
+            rowGap: gap,
+            candleLeft,
             candleWidth,
-            footprintLeft,
-            footprintWidth,
-            footprintRight: footprintLeft + footprintWidth,
-            footprintCenterX: footprintLeft + (footprintWidth / 2)
+            candleCenterX: candleLeft + candleWidth / 2,
+            footprintCenterX: x
         };
     }
 
-    _drawDeltaLabel(footprint, x, barWidth) {
-        if (!footprint || barWidth < 10) return;
+    _getFootprintDetailLevel(barWidth) {
+        if (barWidth >= 30) return 'full';
+        if (barWidth >= 22) return 'medium';
+        if (barWidth >= 16) return 'compact';
+        if (barWidth >= 12) return 'minimal';
+        return 'hidden';
+    }
+
+    _getResponsiveRowCount(shellHeight, detailLevel) {
+        switch (detailLevel) {
+            case 'full':
+                return Math.max(10, Math.min(24, Math.round(shellHeight / 10)));
+            case 'medium':
+                return Math.max(8, Math.min(18, Math.round(shellHeight / 13)));
+            case 'compact':
+                return Math.max(5, Math.min(10, Math.round(shellHeight / 18)));
+            case 'minimal':
+                return Math.max(3, Math.min(5, Math.round(shellHeight / 28)));
+            default:
+                return 0;
+        }
+    }
+
+    _getOverlayStride(visibleBars, minSpacing) {
+        if (visibleBars.length < 2) return 1;
+
+        let smallestGap = Infinity;
+
+        for (let index = 1; index < visibleBars.length; index++) {
+            const gap = Math.abs(visibleBars[index].x - visibleBars[index - 1].x);
+            if (gap > 0) {
+                smallestGap = Math.min(smallestGap, gap);
+            }
+        }
+
+        if (!Number.isFinite(smallestGap) || smallestGap <= 0) {
+            return 1;
+        }
+
+        return Math.max(1, Math.ceil(minSpacing / smallestGap));
+    }
+
+    _drawDeltaLabel(candle, footprint, x, barWidth) {
+        if (!candle || !footprint || barWidth < 10) return;
+        const themeColors = this._getThemeColors();
+        const highY = this.candleSeries?.priceToCoordinate(candle.high);
+        if (highY === null) return;
 
         const delta = footprint.delta || 0;
         const label = this._formatSignedFootprintValue(delta);
-        const labelWidth = Math.max(18, Math.min(62, barWidth * 1.7));
-        const labelHeight = barWidth >= 18 ? 14 : 11;
-        const left = x - labelWidth / 2;
-        const stripHeight = Math.max(42, Math.min(68, this.height * 0.16));
-        const top = this.height - stripHeight - labelHeight - 6;
+        const layout = this._getCompositeLayout(x, barWidth);
+        const labelX = layout.footprintCenterX;
+        const fontSize = Math.min(10, Math.max(7, barWidth * 0.32));
+        const labelHeight = fontSize >= 9 ? 16 : 14;
 
-        this.footprintCtx.fillStyle = 'rgba(8, 10, 16, 0.86)';
+        this.footprintCtx.font = `700 ${fontSize}px Inter, sans-serif`;
+        const textWidth = this.footprintCtx.measureText(label).width;
+        const labelWidth = Math.max(28, Math.min(84, textWidth + 14));
+        const left = Math.max(2, Math.min(this.width - labelWidth - 2, labelX - labelWidth / 2));
+        const top = Math.max(4, highY - labelHeight - 6);
+        const deltaColor = delta > 0 ? '#00e676' : delta < 0 ? '#ff5252' : themeColors.deltaLabelNeutral;
+        const badgeBackground = delta === 0
+            ? themeColors.deltaLabelBackground
+            : this._withAlpha(deltaColor, this.options.theme === 'light' ? 0.12 : 0.18);
+        const badgeBorder = delta === 0
+            ? themeColors.footprintOuterBorder
+            : this._withAlpha(deltaColor, this.options.theme === 'light' ? 0.32 : 0.42);
+
+        this.footprintCtx.fillStyle = badgeBackground;
         this.footprintCtx.fillRect(left, top, labelWidth, labelHeight);
+        this.footprintCtx.strokeStyle = badgeBorder;
+        this.footprintCtx.lineWidth = 1;
+        this.footprintCtx.strokeRect(left + 0.5, top + 0.5, labelWidth - 1, labelHeight - 1);
 
-        const fontSize = Math.min(9, Math.max(6, barWidth * 0.28));
-        this.footprintCtx.font = `600 ${fontSize}px Inter, sans-serif`;
         this.footprintCtx.textAlign = 'center';
         this.footprintCtx.textBaseline = 'middle';
-        this.footprintCtx.fillStyle = delta > 0 ? '#00e676' : delta < 0 ? '#ff5252' : '#8b8b8f';
-        this.footprintCtx.fillText(label, x, top + labelHeight / 2);
+        this.footprintCtx.fillStyle = deltaColor;
+        this.footprintCtx.fillText(label, left + labelWidth / 2, top + labelHeight / 2);
+    }
+
+    _drawFootprintSummaryCard(candle, footprint, x, barWidth) {
+        if (!candle || !footprint) return;
+
+        const themeColors = this._getThemeColors();
+        const lowY = this.candleSeries?.priceToCoordinate(candle.low);
+        if (lowY === null) return;
+
+        const layout = this._getCompositeLayout(x, barWidth);
+        const delta = footprint.delta || 0;
+        const total = (footprint.buyVolume || 0) + (footprint.sellVolume || 0);
+        const deltaText = this._formatSignedFootprintValue(delta);
+        const totalText = this._formatFootprintValue(total);
+        const labelFontSize = layout.sideWidth >= 44 ? 8 : 7;
+        const valueFontSize = layout.sideWidth >= 44 ? 9 : 8;
+        const cardWidth = Math.max(104, Math.min(138, layout.sideWidth * 2.15));
+        const cardHeight = 38;
+        const cardLeft = Math.max(2, Math.min(this.width - cardWidth - 2, x - cardWidth / 2));
+        const cardTop = Math.min(this.height - cardHeight - 4, lowY + 10);
+        const deltaColor = delta > 0 ? '#14b8a6' : delta < 0 ? '#ff4d5a' : themeColors.deltaLabelNeutral;
+
+        this.footprintCtx.save();
+        this.footprintCtx.shadowColor = themeColors.summaryCardShadow;
+        this.footprintCtx.shadowBlur = this.options.theme === 'light' ? 10 : 6;
+        this.footprintCtx.shadowOffsetY = 2;
+        this.footprintCtx.fillStyle = themeColors.summaryCardBackground;
+        this._fillRoundedRect(cardLeft, cardTop, cardWidth, cardHeight, 8);
+        this.footprintCtx.restore();
+
+        this.footprintCtx.save();
+        this.footprintCtx.strokeStyle = themeColors.summaryCardBorder;
+        this.footprintCtx.lineWidth = 1;
+        this._strokeRoundedRect(cardLeft + 0.5, cardTop + 0.5, cardWidth - 1, cardHeight - 1, 8);
+        this.footprintCtx.restore();
+
+        this.footprintCtx.save();
+        this.footprintCtx.font = `500 ${labelFontSize}px Inter, sans-serif`;
+        this.footprintCtx.fillStyle = themeColors.summaryCardLabel;
+        this.footprintCtx.textAlign = 'left';
+        this.footprintCtx.textBaseline = 'top';
+        this.footprintCtx.fillText('Delta', cardLeft + 12, cardTop + 9);
+        this.footprintCtx.fillText('Total', cardLeft + 12, cardTop + 21);
+
+        this.footprintCtx.font = `700 ${valueFontSize}px Inter, sans-serif`;
+        this.footprintCtx.fillStyle = deltaColor;
+        this.footprintCtx.fillText(deltaText, cardLeft + 46, cardTop + 8);
+
+        this.footprintCtx.fillStyle = themeColors.summaryCardText;
+        this.footprintCtx.fillText(totalText, cardLeft + 46, cardTop + 20);
+        this.footprintCtx.restore();
+    }
+
+    _fillRoundedRect(x, y, width, height, radius) {
+        this.footprintCtx.beginPath();
+        this._roundedRectPath(x, y, width, height, radius);
+        this.footprintCtx.fill();
+    }
+
+    _strokeRoundedRect(x, y, width, height, radius) {
+        this.footprintCtx.beginPath();
+        this._roundedRectPath(x, y, width, height, radius);
+        this.footprintCtx.stroke();
+    }
+
+    _roundedRectPath(x, y, width, height, radius) {
+        const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+
+        this.footprintCtx.moveTo(x + r, y);
+        this.footprintCtx.lineTo(x + width - r, y);
+        this.footprintCtx.quadraticCurveTo(x + width, y, x + width, y + r);
+        this.footprintCtx.lineTo(x + width, y + height - r);
+        this.footprintCtx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        this.footprintCtx.lineTo(x + r, y + height);
+        this.footprintCtx.quadraticCurveTo(x, y + height, x, y + height - r);
+        this.footprintCtx.lineTo(x, y + r);
+        this.footprintCtx.quadraticCurveTo(x, y, x + r, y);
+        this.footprintCtx.closePath();
     }
 
     _drawBottomVolumetricStrip(visibleBars) {
         if (!visibleBars.length) return;
+        const themeColors = this._getThemeColors();
 
         const stripHeight = Math.max(42, Math.min(68, this.height * 0.16));
         const top = this.height - stripHeight;
@@ -774,9 +1048,9 @@ export class CandlestickChart {
         const maxDelta = Math.max(...visibleBars.map(item => Math.abs(item.footprint?.delta || 0)), 1);
 
         this.footprintCtx.save();
-        this.footprintCtx.fillStyle = 'rgba(9, 11, 16, 0.94)';
+        this.footprintCtx.fillStyle = themeColors.stripBackground;
         this.footprintCtx.fillRect(0, top, this.width, stripHeight);
-        this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+        this.footprintCtx.strokeStyle = themeColors.stripBorder;
         this.footprintCtx.lineWidth = 1;
         this.footprintCtx.beginPath();
         this.footprintCtx.moveTo(0, top + 0.5);
@@ -785,7 +1059,7 @@ export class CandlestickChart {
 
         for (let row = 1; row < rowCount; row++) {
             const y = top + row * rowHeight;
-            this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+            this.footprintCtx.strokeStyle = themeColors.stripRowLine;
             this.footprintCtx.beginPath();
             this.footprintCtx.moveTo(0, y + 0.5);
             this.footprintCtx.lineTo(this.width, y + 0.5);
@@ -842,6 +1116,7 @@ export class CandlestickChart {
     }
 
     _drawChartLegend(latestFootprint) {
+        const themeColors = this._getThemeColors();
         const legendWidth = 196;
         const legendHeight = 58;
         const x = 12;
@@ -850,39 +1125,39 @@ export class CandlestickChart {
         const currentPrice = this.lastPrice ?? this.candleData[this.candleData.length - 1]?.close ?? null;
 
         this.footprintCtx.save();
-        this.footprintCtx.fillStyle = 'rgba(11, 14, 22, 0.88)';
+        this.footprintCtx.fillStyle = themeColors.legendBackground;
         this.footprintCtx.fillRect(x, y, legendWidth, legendHeight);
-        this.footprintCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+        this.footprintCtx.strokeStyle = themeColors.legendBorder;
         this.footprintCtx.lineWidth = 1;
         this.footprintCtx.strokeRect(x + 0.5, y + 0.5, legendWidth - 1, legendHeight - 1);
 
         this.footprintCtx.font = '600 11px Inter, sans-serif';
         this.footprintCtx.textAlign = 'left';
         this.footprintCtx.textBaseline = 'top';
-        this.footprintCtx.fillStyle = '#f3f5f7';
+        this.footprintCtx.fillStyle = themeColors.legendTitle;
         this.footprintCtx.fillText('Value Footprint', x + 10, y + 8);
 
         this.footprintCtx.font = '500 9px Inter, sans-serif';
-        this.footprintCtx.fillStyle = '#8b8b8f';
+        this.footprintCtx.fillStyle = themeColors.legendSubtitle;
         this.footprintCtx.fillText('Candle left, bid x ask ladder right', x + 10, y + 24);
 
         this.footprintCtx.fillStyle = '#ffd600';
         this.footprintCtx.fillText(`Delta ${this._formatSignedFootprintValue(currentDelta)}`, x + 10, y + 39);
 
         if (currentPrice !== null) {
-            this.footprintCtx.fillStyle = '#d8ffea';
+            this.footprintCtx.fillStyle = themeColors.legendPrice;
             this.footprintCtx.fillText(`Last ${Number(currentPrice).toFixed(this.pricePrecision)}`, x + 102, y + 39);
         }
 
         this.footprintCtx.restore();
     }
 
-    _buildFootprintRows(candle, footprint, highY, lowY) {
+    _buildFootprintRows(candle, footprint, highY, lowY, rowsOverride = null) {
         const priceHigh = Number(candle.high);
         const priceLow = Number(candle.low);
         const range = Math.max(priceHigh - priceLow, Number.EPSILON);
         const shellHeight = Math.max(lowY - highY, 12);
-        const desiredRows = Math.max(3, Math.min(12, Math.round(shellHeight / 14)));
+        const desiredRows = rowsOverride ?? Math.max(6, Math.min(16, Math.round(shellHeight / 13)));
 
         const rows = Array.from({ length: desiredRows }, (_, index) => {
             const ratio = desiredRows === 1 ? 0.5 : index / (desiredRows - 1);
@@ -1044,7 +1319,11 @@ export class CandlestickChart {
         }
 
         const direction = Math.sign((candle.close || 0) - (candle.open || 0));
-        const levelsCount = Math.max(4, Math.min(10, Math.round(4 + Math.abs((candle.close - candle.open) / range) * 4 + Math.log10(volume + 1))));
+        const levelsCount = Math.max(10, Math.min(30, Math.round(
+            10 +
+            Math.abs((candle.close - candle.open) / range) * 8 +
+            Math.log10(volume + 1) * 2
+        )));
         const weights = [];
 
         for (let index = 0; index < levelsCount; index++) {
@@ -1161,19 +1440,25 @@ export class CandlestickChart {
     _formatFootprintValue(value) {
         if (!value) return '0';
 
-        if (value >= 1000) {
-            return `${(value / 1000).toFixed(1)}K`;
+        const absolute = Math.abs(value);
+
+        if (absolute >= 1_000_000) {
+            return `${(value / 1_000_000).toFixed(3).replace(/\.?0+$/, '')} M`;
         }
 
-        if (value >= 100) {
+        if (absolute >= 1_000) {
+            return `${(value / 1_000).toFixed(3).replace(/\.?0+$/, '')} K`;
+        }
+
+        if (absolute >= 100) {
             return value.toFixed(0);
         }
 
-        if (value >= 10) {
-            return value.toFixed(1);
+        if (absolute >= 10) {
+            return value.toFixed(1).replace(/\.0$/, '');
         }
 
-        return value.toFixed(2);
+        return value.toFixed(2).replace(/\.?0+$/, '');
     }
 
     _formatSignedFootprintValue(value) {
@@ -1192,5 +1477,34 @@ export class CandlestickChart {
         const b = parseInt(hex.slice(4, 6), 16);
 
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    _blendColors(fromColor, toColor, intensity = 0.5) {
+        const from = this._parseColor(fromColor);
+        const to = this._parseColor(toColor);
+        const weight = Math.max(0, Math.min(1, intensity));
+
+        if (!from || !to) {
+            return toColor || fromColor || '#ffffff';
+        }
+
+        const r = Math.round(from.r + ((to.r - from.r) * weight));
+        const g = Math.round(from.g + ((to.g - from.g) * weight));
+        const b = Math.round(from.b + ((to.b - from.b) * weight));
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    _parseColor(color) {
+        if (!color) return null;
+
+        const hex = color.replace('#', '').trim();
+        if (hex.length !== 6) return null;
+
+        return {
+            r: parseInt(hex.slice(0, 2), 16),
+            g: parseInt(hex.slice(2, 4), 16),
+            b: parseInt(hex.slice(4, 6), 16)
+        };
     }
 }
